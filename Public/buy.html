@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Buy Data - SINDRIC LOKO DATA PLUG</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css" />
+</head>
+<body>
+  <nav class="container-fluid">
+    <ul>
+      <li><strong>SINDRIC LOKO DATA PLUG</strong></li>
+    </ul>
+    <ul>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="buy.html">Buy Data</a></li>
+    </ul>
+  </nav>
+
+  <main class="container">
+    <h1>Buy Data</h1>
+    <form id="dataForm">
+      <label for="customerName">Your Name:</label>
+      <input type="text" id="customerName" name="customerName" required />
+
+      <label for="network">Select Network:</label>
+      <select id="network" name="network" required>
+        <option value="">--Select--</option>
+        <option value="MTN">MTN</option>
+        <option value="AirtelTigo">AirtelTigo</option>
+        <option value="Telecel">Telecel</option>
+      </select>
+
+      <label for="plan">Select Plan:</label>
+      <select id="plan" name="plan" required></select>
+
+      <label for="customerPhone">Phone Number:</label>
+      <input type="tel" id="customerPhone" name="customerPhone" required />
+
+      <label for="email">Your Email:</label>
+      <input type="email" id="email" name="email" required />
+
+      <button type="submit">Pay Now</button>
+    </form>
+  </main>
+
+  <script src="https://js.paystack.co/v1/inline.js"></script>
+  <script>
+    const plans = {
+      MTN: {
+        "1GB": 5.5, "2GB": 11, "3GB": 16, "4GB": 21, "5GB": 26, "6GB": 31,
+        "7GB": 35, "8GB": 40, "10GB": 49, "15GB": 74, "20GB": 90, "25GB": 112,
+        "30GB": 135, "40GB": 175, "50GB": 215, "100GB": 395
+      },
+      AirtelTigo: {
+        "1GB": 4.9, "2GB": 9.5, "3GB": 14, "4GB": 19, "5GB": 24, "6GB": 29,
+        "7GB": 33, "8GB": 35.5, "10GB": 43.5, "15GB": 63.5, "20GB": 83.5,
+        "30GB": 125, "40GB": 165, "50GB": 195, "100GB": 230
+      },
+      Telecel: {
+        "5GB": 26, "10GB": 48, "15GB": 68, "20GB": 90, "25GB": 115,
+        "30GB": 120, "40GB": 155, "50GB": 195
+      }
+    };
+
+    const networkSelect = document.getElementById("network");
+    const planSelect = document.getElementById("plan");
+
+    networkSelect.addEventListener("change", () => {
+      const network = networkSelect.value;
+      planSelect.innerHTML = "";
+      if (plans[network]) {
+        Object.entries(plans[network]).forEach(([plan, price]) => {
+          const option = document.createElement("option");
+          option.value = plan;
+          option.textContent = `${plan} - GHS ${price}`;
+          planSelect.appendChild(option);
+        });
+      }
+    });
+
+    document.getElementById("dataForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const customerName = document.getElementById("customerName").value;
+      const network = networkSelect.value;
+      const plan = planSelect.value;
+      const phone = document.getElementById("customerPhone").value;
+      const email = document.getElementById("email").value;
+      const amount = plans[network][plan];
+
+      const response = await fetch("/initialize-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount,
+          email,
+          metadata: { customer_name: customerName, customer_phone: phone, network, plan }
+        })
+      });
+      const data = await response.json();
+
+      if (data.status) {
+        window.location.href = data.data.authorization_url;
+      } else {
+        alert("Payment initialization failed");
+      }
+    });
+  </script>
+</body>
+</html>
