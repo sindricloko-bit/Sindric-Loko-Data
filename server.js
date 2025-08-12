@@ -9,6 +9,9 @@ require("dotenv").config();
 
 const app = express();
 app.use(bodyParser.json());
+
+// Set up the static path to serve files from the public directory
+// This is the key change to make it work on Render
 app.use(express.static(path.join(__dirname, "public")));
 
 // Twilio client
@@ -16,7 +19,13 @@ const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TO
 
 // Serve frontend
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/index.html"));
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// A catch-all route to serve other HTML files from the public directory
+app.get("/:file", (req, res) => {
+  const file = req.params.file;
+  res.sendFile(path.join(__dirname, "public", file));
 });
 
 // Initialize Paystack payment
@@ -65,24 +74,14 @@ app.post("/webhook", (req, res) => {
 
       // Send SMS
       client.messages.create({
-        body: `New Data Order:
-Customer: ${customerName}
-Phone: ${phoneNumber}
-Network: ${network}
-Plan: ${plan}
-Amount: GHS ${amountPaid}`,
+        body: `New Data Order:\nCustomer: ${customerName}\nPhone: ${phoneNumber}\nNetwork: ${network}\nPlan: ${plan}\nAmount: GHS ${amountPaid}`,
         from: process.env.TWILIO_PHONE_NUMBER,
         to: process.env.OWNER_PHONE_NUMBER
       }).catch(err => console.error("SMS error:", err));
 
       // Send WhatsApp
       client.messages.create({
-        body: `WhatsApp Alert - New Data Order:
-Customer: ${customerName}
-Phone: ${phoneNumber}
-Network: ${network}
-Plan: ${plan}
-Amount: GHS ${amountPaid}`,
+        body: `WhatsApp Alert - New Data Order:\nCustomer: ${customerName}\nPhone: ${phoneNumber}\nNetwork: ${network}\nPlan: ${plan}\nAmount: GHS ${amountPaid}`,
         from: `whatsapp:${process.env.TWILIO_PHONE_NUMBER}`,
         to: `whatsapp:${process.env.OWNER_PHONE_NUMBER}`
       }).catch(err => console.error("WhatsApp error:", err));
